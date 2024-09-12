@@ -11,9 +11,10 @@ func main() {
 	mux := http.NewServeMux()
 	apiCfg := apiConfig{}
 	mux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app/", http.FileServer(http.Dir(".")))))
-	mux.HandleFunc("GET /healthz", handlerHealthz)
-	mux.HandleFunc("GET /metrics", apiCfg.handlerMetrics)
-	mux.HandleFunc("POST /reset", apiCfg.handlerReset)
+	mux.HandleFunc("GET /api/healthz", handlerHealthz)
+	mux.HandleFunc("GET /api/metrics", apiCfg.handlerMetrics)
+	mux.HandleFunc("GET /api/reset", apiCfg.handlerReset)
+	mux.HandleFunc("GET /admin/metrics", apiCfg.handlerAdminMetrics)
 	server := http.Server{
 		Addr:    ":8080",
 		Handler: mux,
@@ -54,4 +55,20 @@ func (cfg *apiConfig) handlerReset(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(200)
 	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
 	w.Write([]byte("Hits reset to 0"))
+}
+
+func (cfg *apiConfig) handlerAdminMetrics(w http.ResponseWriter, _ *http.Request) {
+	template := `
+	<html>
+
+<body>
+    <h1>Welcome, Chirpy Admin</h1>
+    <p>Chirpy has been visited %d times!</p>
+</body>
+
+</html>
+	`
+	w.WriteHeader(200)
+	w.Header().Add("Content-Type", "text/html; charset=utf-8")
+	w.Write([]byte(fmt.Sprintf(template, cfg.fileserverHits)))
 }
