@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -77,12 +78,38 @@ func (cfg *apiConfig) handlerAdminMetrics(w http.ResponseWriter, _ *http.Request
 	w.Write([]byte(fmt.Sprintf(template, cfg.fileserverHits)))
 }
 
+func isBadWord(word string) bool {
+	lowerWord := strings.ToLower(word)
+	if lowerWord == "kerfuffle" {
+		return true
+	} else if lowerWord == "sharbert" {
+		return true
+	} else if lowerWord == "fornax" {
+		return true
+	} else {
+		return false
+	}
+}
+
+func cleanChirp(input string) string {
+	words := strings.Split(input, " ")
+	result := []string{}
+	for _, word := range words {
+		if isBadWord(word) {
+			result = append(result, "****")
+		} else {
+			result = append(result, word)
+		}
+	}
+	return strings.Join(result, " ")
+}
+
 func (cfg *apiConfig) handleValidateChirp(w http.ResponseWriter, req *http.Request) {
 	type params struct {
 		Body string `json:"body"`
 	}
 	type retValue struct {
-		Valid bool `json:"valid"`
+		Body string `json:"cleaned_body"`
 	}
 
 	apiParams := params{}
@@ -93,7 +120,7 @@ func (cfg *apiConfig) handleValidateChirp(w http.ResponseWriter, req *http.Reque
 	} else if len(apiParams.Body) > 140 {
 		respondWithError(w, 400, "Chirp is too long")
 	} else {
-		respondWithJSON(w, 200, retValue{Valid: true})
+		respondWithJSON(w, 200, retValue{Body: cleanChirp(apiParams.Body)})
 	}
 }
 
